@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 import warnings
 import time
-import postprocessing as pp
+# import postprocessing as pp
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 init_link = r"https://worldathletics.org/records/all-time-toplists/TYPE/SUBTYPE/outdoor/GENDER/senior"
@@ -79,5 +79,5 @@ for type_v in type_list:
 
         df_dict["AllTime"][f"{type_v[0]}_{type_v[1]}"][gender] = df_loc
 
-pp.create_hist(df_dict, ("AllTime", "throws_javelin-throw"), "mixed")
+# pp.create_hist(df_dict, ("AllTime", "throws_javelin-throw"), "mixed")
 
