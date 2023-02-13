@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import warnings
 import time
+from sqlalchemy import create_engine
 # import postprocessing as pp
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -80,4 +81,28 @@ for type_v in type_list:
         df_dict["AllTime"][f"{type_v[0]}_{type_v[1]}"][gender] = df_loc
 
 # pp.create_hist(df_dict, ("AllTime", "throws_javelin-throw"), "mixed")
+# pp.upload_input(data)
+from sqlalchemy import create_engine
+from flask import json
+
+db_driver = "postgresql+psycopg2"
+db_user = "postgres"
+db_pass = "swordfish"
+db_host = "localhost"
+db_port = "5432"
+db_name = "postgres"
+args = ""
+
+db = create_engine(
+    f"{db_driver}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}{args}",
+    pool_recycle=1200,
+    pool_use_lifo=True,
+    pool_pre_ping=True,
+    pool_size=20,
+    json_serializer=json.dumps,
+    json_deserializer=json.loads,
+)
+
+
+print("")
 
