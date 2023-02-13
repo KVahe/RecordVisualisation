@@ -1,15 +1,30 @@
 CREATE DATABASE records_db;
 
-DROP TABLE records_input_json;
+DROP TABLE IF EXISTS run;
+CREATE TABLE IF NOT EXISTS run (
+	id INT,
+	created_on TIMESTAMP,
+	PRIMARY KEY(id)
+	);
+
+DROP TABLE IF EXISTS records_input_json;
 CREATE TABLE IF NOT EXISTS records_input_json (
+   id INT,
    run_id INT,
    payload JSON,
-   created_on TIMESTAMP
+   PRIMARY KEY(id),
+   FOREIGN KEY(run_id)
+   REFERENCES run(id)
 );
 
-DROP TABLE records_output_json;
+DROP TABLE IF EXISTS records_output_json;
 CREATE TABLE IF NOT EXISTS records_output_json (
-   run_id INT,
+   id INT,
    payload JSON,
-   created_on TIMESTAMP
+   run_id INT,
+   PRIMARY KEY(id),
+   FOREIGN KEY(run_id)
+   REFERENCES run(id)
 );
+
+

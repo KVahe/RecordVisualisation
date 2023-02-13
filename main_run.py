@@ -84,6 +84,20 @@ for type_v in type_list:
 # pp.upload_input(data)
 from sqlalchemy import create_engine
 from flask import json
+from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import (
+    BigInteger, Column, DateTime, ForeignKey, Integer,
+    Text, Enum,
+    MetaData
+)
+from sqlalchemy.sql import func
+
+from datetime import datetime
+
+Base = declarative_base()
 
 db_driver = "postgresql+psycopg2"
 db_user = "postgres"
@@ -93,7 +107,36 @@ db_port = "5432"
 db_name = "postgres"
 args = ""
 
-db = create_engine(
+class RecordsInputJson(Base):
+    __tablename__ = "records_input_json"
+
+    id = Column(BigInteger, primary_key=True)
+    payload = Column(JSONB, nullable=False)
+    run_id = Column(BigInteger, ForeignKey("run.id", ondelete="CASCADE"))
+    run = relationship("Run", uselist=False, back_populates="records_input_json")
+
+
+class RecordsOutputJson(Base):
+    __tablename__ = "records_output_json"
+
+    id = Column(BigInteger, primary_key=True)
+    payload = Column(JSONB, nullable=False)
+    run_id = Column(BigInteger, ForeignKey("run.id", ondelete="CASCADE"))
+    run = relationship("Run", uselist=False, back_populates="records_output_json")
+
+
+class Run(Base):
+    __tablename__ = "run"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    created_on = Column(DateTime, nullable=False, server_default=func.now())
+
+    records_output_json = relationship("RecordsOutputJson", back_populates="run",
+                             cascade="all, delete, delete-orphan")
+    records_input_json = relationship("RecordsInputJson", back_populates="run",
+                             cascade="all, delete, delete-orphan")
+
+
+db_engine = create_engine(
     f"{db_driver}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}{args}",
     pool_recycle=1200,
     pool_use_lifo=True,
@@ -102,7 +145,10 @@ db = create_engine(
     json_serializer=json.dumps,
     json_deserializer=json.loads,
 )
-
-
+session = Session(bind=db_engine)
+m_run = Run(created_on=datetime.now())
+session.add(m_run)
+session.flush()
+m_run.id
 print("")
 
