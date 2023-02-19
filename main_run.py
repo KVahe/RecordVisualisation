@@ -5,6 +5,10 @@ import pandas as pd
 import warnings
 import time
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from flask import json
+
+from record_db import *
 # import postprocessing as pp
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -80,24 +84,6 @@ for type_v in type_list:
 
         df_dict["AllTime"][f"{type_v[0]}_{type_v[1]}"][gender] = df_loc
 
-# pp.create_hist(df_dict, ("AllTime", "throws_javelin-throw"), "mixed")
-# pp.upload_input(data)
-from sqlalchemy import create_engine
-from flask import json
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (
-    BigInteger, Column, DateTime, ForeignKey, Integer,
-    Text, Enum,
-    MetaData
-)
-from sqlalchemy.sql import func
-
-from datetime import datetime
-
-Base = declarative_base()
 
 db_driver = "postgresql+psycopg2"
 db_user = "postgres"
@@ -106,35 +92,6 @@ db_host = "localhost"
 db_port = "5432"
 db_name = "postgres"
 args = ""
-
-class RecordsInputJson(Base):
-    __tablename__ = "records_input_json"
-
-    id = Column(BigInteger, primary_key=True)
-    payload = Column(JSONB, nullable=False)
-    run_id = Column(BigInteger, ForeignKey("run.id", ondelete="CASCADE"))
-    run = relationship("Run", uselist=False, back_populates="records_input_json")
-
-
-class RecordsOutputJson(Base):
-    __tablename__ = "records_output_json"
-
-    id = Column(BigInteger, primary_key=True)
-    payload = Column(JSONB, nullable=False)
-    run_id = Column(BigInteger, ForeignKey("run.id", ondelete="CASCADE"))
-    run = relationship("Run", uselist=False, back_populates="records_output_json")
-
-
-class Run(Base):
-    __tablename__ = "run"
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    created_on = Column(DateTime, nullable=False, server_default=func.now())
-
-    records_output_json = relationship("RecordsOutputJson", back_populates="run",
-                             cascade="all, delete, delete-orphan")
-    records_input_json = relationship("RecordsInputJson", back_populates="run",
-                             cascade="all, delete, delete-orphan")
-
 
 db_engine = create_engine(
     f"{db_driver}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}{args}",
@@ -145,10 +102,28 @@ db_engine = create_engine(
     json_serializer=json.dumps,
     json_deserializer=json.loads,
 )
+
+input_json = jsonize_data(df_dict)
+output_json = "{}"
 session = Session(bind=db_engine)
 m_run = Run(created_on=datetime.now())
 session.add(m_run)
 session.flush()
-m_run.id
+run_id = m_run.id
+input = RecordsInputJson(payload=input_json, run_id=run_id)
+output = RecordsOutputJson(payload=output_json)
+session.add(input)
+session.add(output)
+session.flush()
+session.close()
+
+type_dict = {
+    "gender": genders,
+    "sport": type_list,
+    "record": "AllTime"
+}
+save_structured_data(session, type_dict, input_json)
+
+
 print("")
 
